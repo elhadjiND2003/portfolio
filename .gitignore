@@ -1,0 +1,12 @@
+# Secrets — ne jamais commiter
+html/smtp_config.php
+*.env
+
+# Système
+Thumbs.db
+.DS_Store
+
+# Éditeurs / IDE
+.vscode/
+.idea/
+*.sublime-project
