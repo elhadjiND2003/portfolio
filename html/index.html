@@ -892,9 +892,10 @@
           </div>
         </div>
         <div class="col-lg-6">
-          <form class="vg-contact-form" action="email.php" method="post" novalidate>
+          <form class="vg-contact-form" action="/" name="contact" method="POST" data-netlify="true" novalidate>
             <div class="form-row">
-              <input type="text" name="website" value="" style="display:none;" tabindex="-1" autocomplete="off" aria-hidden="true">
+              <input type="hidden" name="form-name" value="contact">
+              <input type="text" name="_gotcha" value="" style="display:none;" tabindex="-1" autocomplete="off" aria-hidden="true">
               <div class="col-12 mt-3 wow fadeInUp">
                 <input class="form-control" type="text" name="name" placeholder="Nom" required autocomplete="name">
                 <div class="invalid-feedback">Veuillez saisir votre nom.</div>
@@ -979,15 +980,6 @@
       const $form = $('.vg-contact-form');
       if (!$form.length) return;
 
-      // Message après redirection (email.php sans JS)
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('status') === 'success') {
-        showFormAlert('success', 'Merci ! Votre message a bien été envoyé. Je vous répondrai rapidement.');
-        $form[0].reset();
-      } else if (params.get('status') === 'error') {
-        showFormAlert('danger', 'Erreur lors de l\'envoi. Veuillez réessayer ou m\'écrire directement par email.');
-      }
-
       // Retirer l'état d'erreur à la saisie
       $form.on('input', '.form-control', function() {
         $(this).removeClass('is-invalid');
@@ -1014,46 +1006,27 @@
           return;
         }
 
-        // Envoi en AJAX
+        // Envoi en AJAX vers Netlify Forms
         const $btn = $form.find('button[type="submit"]');
         $btn.prop('disabled', true).text('Envoi en cours...');
 
         const data = new FormData($form[0]);
-        data.append('ajax', '1');
 
         $.ajax({
           url: $form.attr('action'),
           method: 'POST',
           data: data,
           processData: false,
-          contentType: false
+          contentType: false,
+          headers: { 'Accept': 'application/json' }
         })
-          .done(function(response) {
-            if (typeof response === 'string') {
-              try { response = JSON.parse(response); } catch (e) {}
-            }
-            if (response && response.status === 'success') {
-              $form[0].reset();
-              showFormAlert('success', response.message || 'Message envoyé avec succès.');
-            } else {
-              showFormAlert('danger', (response && response.message) || 'Une erreur est survenue. Veuillez réessayer.');
-            }
+          .done(function() {
+            $form[0].reset();
+            showFormAlert('success', 'Merci ! Votre message a bien été envoyé. Je vous répondrai rapidement.');
           })
-          .fail(function(xhr) {
-            // Si le serveur a renvoyé une erreur JSON (validation, SMTP...), on l'affiche.
-            var serverMsg = '';
-            if (xhr.responseText) {
-              try {
-                var parsed = JSON.parse(xhr.responseText);
-                if (parsed && parsed.message) serverMsg = parsed.message;
-              } catch (e) {}
-            }
-            if (serverMsg) {
-              showFormAlert('danger', serverMsg);
-            } else {
-              // Fallback: soumission classique si le serveur ne supporte pas l'AJAX
-              $form[0].submit();
-            }
+          .fail(function() {
+            // Fallback: soumission classique si l'AJAX échoue (Netlify la gère nativement)
+            $form[0].submit();
           })
           .always(function() {
             $btn.prop('disabled', false).text('Envoyer un message');
